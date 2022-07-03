@@ -75,6 +75,7 @@
                     <navigationItem key="navigationItem" id="p0o-4x-XL9"/>
                     <connections>
                         <outlet property="newCaseLabel" destination="fmZ-3h-4U4" id="NMB-Jj-ha8"/>
+                        <outlet property="pieChartView" destination="Sel-lh-rrz" id="XQm-eY-P66"/>
                         <outlet property="totalCaseLabel" destination="SAw-ea-g0v" id="f8i-Li-Ea5"/>
                     </connections>
                 </viewController>
