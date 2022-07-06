@@ -22,11 +22,87 @@ class ViewController: UIViewController {
             guard let self = self else { return } //일시적으로 self가 strong 래퍼런스가 되게
             switch result {
             case let .success(result):
-                debugPrint("success \(result)")
+                self.configureStackView(koreaCovidOverview: result.korea)
+                //Alamofire에서 completionHandler는 메인쓰레드에서 동작하여 따로 메인 디스패치큐를 안만들어도 된다
+                let covidOverviewList = self.makeCovidOverviewList(cityCovidOverview: result)
+                self.configureChatView(covidOverviewList: covidOverviewList)
             case let .failure(result):
                 debugPrint("error \(result)")
             }
         })
+    }
+    
+    func makeCovidOverviewList(
+        cityCovidOverview: CityCovidOverview
+    ) -> [CovidOverview] {
+        return [
+            cityCovidOverview.seoul,
+            cityCovidOverview.busan,
+            cityCovidOverview.daegu,
+            cityCovidOverview.incheon,
+            cityCovidOverview.gwangju,
+            cityCovidOverview.daejeon,
+            cityCovidOverview.ulsan,
+            cityCovidOverview.sejong,
+            cityCovidOverview.gyeonggi,
+            cityCovidOverview.chungbuk,
+            cityCovidOverview.chungnam,
+            cityCovidOverview.gyeongbuk,
+            cityCovidOverview.gyeongnam,
+            cityCovidOverview.jeju,
+        ]
+    }
+    
+    func configureChatView(covidOverviewList: [CovidOverview]) {
+        //파이차트에 데이터를 표시하려면 파이차트 데이터 엔트리 객체에 데이터를 추가해야함
+        //[CovidOverview]로 받은 데이터를 pieChart엔트리 객체로 mapping 하기
+        let entries = covidOverviewList.compactMap { [weak self] overview -> PieChartDataEntry? in
+            guard let self = self else { return nil }
+            return PieChartDataEntry(
+                value: self.removeFormatString(string: String(overview.newCase)),
+                label: overview.countryName,
+                data: overview
+            )
+        }
+        let dataSet = PieChartDataSet(entries: entries, label: "코로나 발생 현황")
+        dataSet.sliceSpace = 1 //항목별 간격
+        dataSet.entryLabelColor = .black
+        dataSet.valueTextColor = .black
+        dataSet.xValuePosition = .outsideSlice
+        dataSet.valueLinePart1OffsetPercentage = 0.8
+        dataSet.valueLinePart1Length = 0.2
+        dataSet.valueLinePart2Length = 0.3
+        
+        dataSet.colors = ChartColorTemplates.vordiplom() +
+            ChartColorTemplates.joyful() +
+            ChartColorTemplates.liberty() +
+            ChartColorTemplates.pastel() +
+            ChartColorTemplates.material()
+        
+        self.pieChartView.data = PieChartData(dataSet: dataSet)
+        //그래프 회전 시키기
+        self.pieChartView.spin(
+            duration: 0.3,
+            fromAngle: self.pieChartView.rotationAngle,
+            toAngle: self.pieChartView.rotationAngle + 80
+        )
+    }
+    
+    func removeFormatString(string: String) -> Double {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.number(from: string)?.doubleValue ?? 0 //잘 동작하는지 확인 필요 **
+    }
+    
+    func intToString(intToString: Int) -> String {
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        return numberFormatter.string(from: NSNumber(value: intToString)) ?? "0"
+    }
+    
+    func configureStackView(koreaCovidOverview: CovidOverview) {
+        self.totalCaseLabel.text = "\(intToString(intToString: koreaCovidOverview.totalCase))명"
+        self.newCaseLabel.text = "\(intToString(intToString: koreaCovidOverview.newCase))명"
     }
 
     func fetchCovidOverview(
