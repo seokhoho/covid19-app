@@ -13,13 +13,21 @@ import Charts
 class ViewController: UIViewController {
     @IBOutlet weak var totalCaseLabel: UILabel!
     @IBOutlet weak var newCaseLabel: UILabel!
+    
+    @IBOutlet weak var indicatorView: UIActivityIndicatorView!
+    @IBOutlet weak var labelStackView: UIStackView!
     @IBOutlet weak var pieChartView: PieChartView!
     //차트 라이브러리 안에 포함되어 import Charts를 작성
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.indicatorView.startAnimating()
         self.fetchCovidOverview(completionHandler: { [weak self] /*순환참조방지*/ result in
             guard let self = self else { return } //일시적으로 self가 strong 래퍼런스가 되게
+            self.indicatorView.stopAnimating()
+            self.indicatorView.isHidden = true
+            self.labelStackView.isHidden = false
+            self.pieChartView.isHidden = false
             switch result {
             case let .success(result):
                 self.configureStackView(koreaCovidOverview: result.korea)
@@ -54,6 +62,7 @@ class ViewController: UIViewController {
     }
     
     func configureChatView(covidOverviewList: [CovidOverview]) {
+        self.pieChartView.delegate = self
         //파이차트에 데이터를 표시하려면 파이차트 데이터 엔트리 객체에 데이터를 추가해야함
         //[CovidOverview]로 받은 데이터를 pieChart엔트리 객체로 mapping 하기
         let entries = covidOverviewList.compactMap { [weak self] overview -> PieChartDataEntry? in
@@ -155,3 +164,12 @@ class ViewController: UIViewController {
 
 }
 
+extension ViewController: ChartViewDelegate {
+    func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        //차트에서 항목을 선택 했을 때 호출이 되는 메서드
+        guard let covidDetailViewController = self.storyboard?.instantiateViewController(identifier: "CovidDetailViewController") as? CovidDetailViewController else { return }
+        guard let covidOverview = entry.data as? CovidOverview else { return }
+        covidDetailViewController.covidOverview = covidOverview
+        self.navigationController?.pushViewController(covidDetailViewController, animated: true)
+    }
+}
